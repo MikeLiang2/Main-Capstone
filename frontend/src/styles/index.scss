@@ -1,0 +1,38 @@
+@use '@/styles/reset.scss' as *;
+@use '@/styles/global_var.scss' as *;
+
+// reset
+//global styles variables
+
+// 
+/* 作用于所有可滚动区域 */
+::-webkit-scrollbar {
+    width: 12px;
+    /* 垂直滚动条宽度 */
+    height: 12px;
+    /* 水平滚动条高度 */
+}
+
+/* base track */
+::-webkit-scrollbar-track {
+    background: #ecb6d4;
+    border-radius: 4px;
+}
+
+/* scroller */
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #6ea8fe, #a0c4ff);
+    border: 2px solid #ffffff;
+    border-radius: 10px;
+    box-shadow: inset 0 0 3px rgba(0, 0, 0, 0.2);
+}
+
+/* mouse hover bar */
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #4895ef, #4361ee);
+}
+
+/* corner */
+::-webkit-scrollbar-corner {
+    background: transparent;
+}
