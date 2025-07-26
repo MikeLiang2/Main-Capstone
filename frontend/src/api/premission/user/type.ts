@@ -8,13 +8,15 @@
 
 // account info get from back
 export interface AccountInfo {
-    id?: number
+    id?: string
+    username: string
+    email: string
+    password?: string
+    roleId: number 
+    
+    avatar?: string
     createTime?: string
     updateTime?: string
-    email?: string
-    username: string
-    password: string
-    roleId?: number // role ID, optional
 }
 
 export type AccountList = AccountInfo[];

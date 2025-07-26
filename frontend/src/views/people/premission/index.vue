@@ -3,14 +3,15 @@
     <el-card>
         <el-form class="search-form" :inline="true">
             <el-form-item label="User Name:" prop="name">
-                <el-input placeholder="Enter name" />
+                <el-input placeholder="Enter name" v-model="searchinfo" />
             </el-form-item>
 
             <el-form-item class="form-buttons">
-                <el-button type="primary" icon="Search">Search</el-button>
-                <el-button type="danger" icon="CircleClose">Reset</el-button>
+                <el-button type="primary" icon="Search" :disabled="!searchinfo" @click="handleSearch">Search</el-button>
+                <el-button type="danger" icon="CircleClose" @click="handleReset">Reset</el-button>
             </el-form-item>
         </el-form>
+
     </el-card>
 
     <!-- User Table and Actions -->
@@ -23,21 +24,29 @@
         <!-- users -->
         <el-table :fit="true" style="width: 100%; margin: 15px 0;" :data="userList">
             <el-table-column type="selection" width="30" />
-            <el-table-column align="center" prop="id" label="#" show-overflow-tooltip />
-            <el-table-column align="center" prop="username" label="Name" show-overflow-tooltip />
-            <el-table-column align="center" prop="email" label="Email" show-overflow-tooltip />
-            <el-table-column align="center" label="Role" show-overflow-tooltip>
+            <el-table-column align="center" prop="id" label="#" show-overflow-tooltip sortable/>
+            <el-table-column align="center" prop="username" label="Name" show-overflow-tooltip sortable/>
+            <el-table-column align="center" prop="email" label="Email" show-overflow-tooltip sortable/>
+            <el-table-column align="center" label="Role" show-overflow-tooltip sortable>
                 <template #="{ row }">
                     {{ roleMap[row.roleId] || 'Unknown' }}
                 </template>
             </el-table-column>
-            <el-table-column align="center" prop="createTime" label="Create Date" show-overflow-tooltip />
-            <el-table-column align="center" prop="updateTime" label="Update Date" show-overflow-tooltip />
-            <el-table-column align="center" width="255" prop="Operations" label="Operations" show-overflow-tooltip>
-                <template #="{ row, $index }">
-                    <el-button type="primary" size="small" @click="() => update(row)">Edit</el-button>
-                    <el-button type="primary" size="small" @click="setRole(row)">Role</el-button>
-                    <el-button type="danger" size="small" @click="deleteUser(row)">Delete</el-button>
+            <el-table-column align="center" prop="createTime" label="Create Date" show-overflow-tooltip sortable/>
+            <el-table-column align="center" prop="updateTime" label="Update Date" show-overflow-tooltip sortable/>
+            <el-table-column align="center" width="300" prop="Operations" label="Operations">
+                <template #="{ row }">
+                    <div style="display: flex; flex-wrap: wrap; gap: 4px; justify-content: center;">
+                        <el-button type="primary" size="small" @click="() => update(row)">Edit</el-button>
+                        <el-button type="primary" size="small" @click="() => setPass(row)">
+                            <el-icon>
+                                <Lock />
+                            </el-icon>
+                            <span style="margin-left: 4px;">Pass</span>
+                        </el-button>
+                        <!-- <el-button type="primary" size="small" @click="() => setRole(row)">Role</el-button> -->
+                        <el-button type="danger" size="small" @click="() => deleteUser(row)">Delete</el-button>
+                    </div>
                 </template>
             </el-table-column>
 
@@ -48,7 +57,7 @@
             @current-change="handleCurrentChange" />
     </el-card>
 
-    <el-drawer v-model="showDrawer" :title="isEditMode ? 'Edit User' : 'Add User'" :before-close="handleClose">
+    <el-drawer v-model="showDrawer" :title="isEditMode ? 'Edit User' : 'Add User'">
         <template #default>
             <!-- <span>Hi, there!</span> -->
             <el-form ref="userFormRef" :model="userForm" :rules="formRules" label-width="80px" class="user-form"
@@ -59,23 +68,31 @@
                 <el-form-item label="Email" prop="email" :rules="formRules.email">
                     <el-input placeholder="Enter email" v-model="userForm.email" />
                 </el-form-item>
-                <el-form-item label="Password" prop="password" :rules="formRules.password">
+                <el-form-item v-if="!isEditMode" label="Password" prop="password" :rules="formRules.password">
                     <el-input type="password" placeholder="Enter password" v-model="userForm.password" />
                 </el-form-item>
-                <!-- <el-form-item label="Role">
-                    <el-select placeholder="Select role">
-                        <el-option label="Admin" value="admin" />
-                        <el-option label="User" value="user" />
+                <el-form-item v-if="isEditMode" label="Role" :rules="formRules.role">
+                    <el-select v-model="userForm.roleId" placeholder="Select role">
+                        <el-option v-for="role in roleList" :key="role.id" :label="role.name" :value="role.id" />
                     </el-select>
-                </el-form-item> -->
+                </el-form-item>
+                <el-form-item label="Avatar" prop="avatar">
+                    <el-input placeholder="Enter avatar" v-model="userForm.avatar" />
+                </el-form-item>
+
+                <!-- 表单项 -->
+                <el-form-item style="text-align: right;">
+                    <el-button type="primary" @click="submitUser">Confirm</el-button>
+                    <el-button @click="showDrawer = false">Cancel</el-button>
+                </el-form-item>
             </el-form>
 
         </template>
 
-        <template #footer>
-            <el-button @click="showDrawer = false">Cancel</el-button>
+        <!-- <template #footer>
             <el-button type="primary" @click="submitUser">Confirm</el-button>
-        </template>
+            <el-button @click="showDrawer = false">Cancel</el-button>
+        </template> -->
     </el-drawer>
     <!-- interface user {
     id: number
@@ -90,29 +107,27 @@
 } -->
 
     <!-- For role allocation -->
-    <el-drawer v-model="drawerRole" size="400px" :with-header="false">
-        <div class="drawer-role-container">
-            <div class="drawer-role-header">
-                <h3>Configure Roles</h3>
+    <el-drawer v-model="drawerPass" size="400px" :with-header="false">
+        <div class="drawer-pass-container">
+            <div class="drawer-pass-header">
+                <h3>Change Password</h3>
             </div>
 
-            <el-form label-width="90px" class="drawer-role-form">
+            <el-form ref="userFormRef" :model="userForm" :rules="formRules" label-width="80px" class="user-form">
                 <el-form-item label="User Name">
                     <div class="plain-text">{{ userForm.username }}</div>
                 </el-form-item>
 
-                <el-form-item label="Roles">
-                    <el-select v-model="userRole" placeholder="Select role">
-                        <el-option v-for="role in roleList" :key="role.id" :label="role.name" :value="role.id" />
-                    </el-select>
+                <el-form-item label="Password" prop="password" :rules="formRules.password">
+                    <el-input type="password" placeholder="Enter password" v-model="userForm.password" />
                 </el-form-item>
 
             </el-form>
 
-            <div class="drawer-role-footer">
+            <div class="drawer-pass-footer">
                 <!-- @click="submitRole" -->
-                <el-button type="primary" @click="submitRole">Submit</el-button>
-                <el-button @click="drawerRole = false">Close</el-button>
+                <el-button type="primary" @click="submitPass">Submit</el-button>
+                <el-button @click="drawerPass = false">Close</el-button>
             </div>
         </div>
     </el-drawer>
@@ -125,20 +140,21 @@
 //default page
 import { ref, onMounted, reactive, computed } from 'vue';
 import type { AccountInfo, UserData, AccountList } from '@/api/premission/user/type';
-import { getUserList } from '@/api/premission/user/index';
+import { getUserList, updateUser, updateUserPassword } from '@/api/premission/user/index';
 import type { AxiosResponse } from 'axios';
 import { ElMessageBox, ElMessage } from 'element-plus'
-import { addUser as addUserApi } from '@/api/premission/user/index';
-import { updateUser as updateUserApi } from '@/api/premission/user/index';
 import { deleteUser as deleteUserApi } from '@/api/premission/user/index';
 import type { FormInstance } from 'element-plus';
 import { showSuccessAndReload } from '@/views/people/premission/autoreloder/autorelod';
 import type { Role } from '@/api/premission/role/types';
 import { getAllRoles } from '@/api/premission/role';
-import { assignRole } from '@/api/premission/role';
+import { registerApi } from '@/api/user';
+
+
+//search info
+const searchinfo = ref('');
 
 let isEditMode = ref(false);
-let currentEditUserId = ref<number | null>(null);
 
 // import type { DrawerProps } from 'element-plus'
 let currentPage = ref(1);
@@ -148,6 +164,35 @@ let pageSize = ref(10);
 
 // Total number of items
 let total = ref(0);
+
+let showDrawer = ref(false);
+
+// drawer for password change
+let drawerPass = ref(false);
+
+let userList = ref<AccountList>([]);
+
+let currentEditUserId = ref<string | null>(null);
+//For User add and data collection 
+let userForm = reactive<AccountInfo>({
+    username: '',
+    email: '',
+    password: '',
+    roleId: 1,
+
+    avatar: '',
+    createTime: '',
+    updateTime: '',
+});
+
+const roleList = ref<Role[]>([])
+const roleMap = computed(() => {
+    const map: Record<number, string> = {}
+    roleList.value.forEach(role => {
+        map[role.id] = role.name
+    })
+    return map
+})
 
 // Form reference for validation
 const userFormRef = ref<FormInstance>();
@@ -171,109 +216,25 @@ const formRules = {
         }
     ],
     password: [
-        { required: true, message: 'Password is required', trigger: 'blur' },
-        { min: 6, message: 'Password must be at least 6 characters', trigger: 'blur' }
-    ]
+        { required: true, message: 'Password is required', trigger: 'blur' }
+    ],
+    role: [
+        { required: true, message: 'Role is required', trigger: 'blur' }
+    ],
 };
 
-/////////////////////////////
-// drawer
-let userList = ref<AccountList>([]);
-let showDrawer = ref(false);
-
-
-
-const handleClose = (done: () => void) => {
-    ElMessageBox.confirm('Are you sure you want to close this?')
-        .then(() => {
-            done()
-        })
-        .catch(() => {
-            // catch error
-        })
-}
-
-/////////////////////////////////////ROLE ALLOCATION
-// drawer for role allocation
-let drawerRole = ref(false);
-
-
-// let rl = ['admin', 'user', 'manager'];
-let userRole = ref<number>(-1);
-
-const setRole = (row: AccountInfo) => {
-    drawerRole.value = true;
-
-    Object.assign(userForm, {
-        id: row.id,
-        username: row.username
-    });
-
-    userRole.value = row.roleId ?? -1;
-};
-
-const roleList = ref<Role[]>([])
-const roleMap = computed(() => {
-    const map: Record<number, string> = {}
-    roleList.value.forEach(role => {
-        map[role.id] = role.name
-    })
-    return map
-})
-
-const fetchRoles = async () => {
-    const res = await getAllRoles()
-    if (res.status === 200) {
-        roleList.value = res.data.roles;
-    }
-}
-
-// const onRoleChange = (value: string) => {
-//     userRole.value = value;
-// };
-
-const submitRole = async () => {
-  if (!userForm.id || userRole.value === -1) {
-    ElMessage.warning('Missing user or role');
-    return;
-  }
-
-  try {
-    const res = await assignRole({
-      userId: userForm.id,
-      roleId: userRole.value,
-    });
-
-    if (res.status === 200) {
-      ElMessage.success('Role updated successfully');
-      drawerRole.value = false;
-      receiveUserList();
-    } else {
-      ElMessage.error('Failed to update role');
-    }
-  } catch (error) {
-    console.error('Error updating role:', error);
-    ElMessage.error('Error occurred while updating role');
-  }
-};
-
-
-
-///////////////////////////////
-// Current page number change (handleCurrentChange).
-const handleCurrentChange = (val: number) => {
-    // console.log(`current page: ${val}`)
-    currentPage.value = val;
-    receiveUserList(currentPage.value);
-}
+onMounted(() => {
+    receiveUserList();
+    fetchRoles();
+});
 
 // Fetch user list
 const receiveUserList = async (page = 1) => {
     currentPage.value = page;
     try {
-        const res: AxiosResponse<UserData> = await getUserList(currentPage.value, pageSize.value);
+        const res: AxiosResponse<UserData> = await getUserList(currentPage.value, pageSize.value, searchinfo.value);
 
-        //console.log(res);
+        // console.log(res);
         if (res.status === 200) {
             userList.value = res.data.records;
             total.value = res.data.total;
@@ -283,8 +244,76 @@ const receiveUserList = async (page = 1) => {
             console.error("Failed to fetch user list");
         }
     } catch (error) {
-        console.error('Error fetching user list 2:', error);
+        console.error('Error fetching user list:', error);
     }
+}
+
+
+const fetchRoles = async () => {
+    const res = await getAllRoles()
+    if (res.status === 200) {
+        roleList.value = res.data;
+    }
+}
+
+/////////////////////////////////////Password Change
+const setPass = (row: AccountInfo) => {
+    resetForm();
+    currentEditUserId.value = row.id!;
+    drawerPass.value = true;
+
+    userForm.username = row.username;
+};
+
+// const onRoleChange = (value: string) => {
+//     userRole.value = value;
+// };
+
+async function submitPass() {
+    if (!userFormRef.value) {
+        console.error('Form ref is not set');
+        return;
+    }
+
+    userFormRef.value.validate(async (valid: boolean) => {
+        if (!valid) {
+            ElMessageBox.alert('Please fix form errors before submitting.', 'Validation Failed');
+            return;
+        }
+        try {
+            // Your API call here
+            const res = await updateUserPassword(currentEditUserId.value, userForm.password);
+            if (res.status === 200) {
+                // handle success
+            } else {
+                ElMessageBox.alert('Failed to update user password', 'Error');
+            }
+            drawerPass.value = false;
+            // reload list, reset form etc.
+        } catch (error: any) {
+            ElMessageBox.alert(error.response?.data?.detail || 'Unexpected error occurred', 'Error');
+        }
+    });
+}
+
+///////////////////////////////
+const resetForm = () => {
+    userForm.username = '';
+    userForm.email = '';
+    userForm.password = '';
+    userForm.roleId = 1;
+
+    userForm.avatar = '';
+
+    isEditMode.value = false;
+    currentEditUserId.value = null;
+};
+
+// Current page number change (handleCurrentChange).
+const handleCurrentChange = (val: number) => {
+    // console.log(`current page: ${val}`)
+    currentPage.value = val;
+    receiveUserList(currentPage.value);
 }
 
 const addUser = () => {
@@ -293,7 +322,29 @@ const addUser = () => {
     // console.log("Add user button clicked");
 }
 
+const update = (row: AccountInfo) => {
+    resetForm();
+    currentEditUserId.value = row.id!;
+    isEditMode.value = true;
+    showDrawer.value = true;
+
+    // 预填表单
+    userForm.username = row.username;
+    userForm.email = row.email;
+    // userForm.password = row.password;
+    userForm.roleId = row.roleId;
+
+    userForm.avatar = row.avatar ?? "";
+};
+
+// delete user
+const currentUserId = localStorage.getItem('userId');
 const deleteUser = (row: AccountInfo) => {
+    if (row.id === currentUserId) {
+        ElMessage.warning('You cannot delete your own account!');
+        return;
+    }
+
     ElMessageBox.confirm(`Are you sure you want to delete user "${row.username}"?`, 'Warning', {
         confirmButtonText: 'Yes',
         cancelButtonText: 'No',
@@ -304,42 +355,16 @@ const deleteUser = (row: AccountInfo) => {
                 await deleteUserApi(row.id!);
                 ElMessage.success('User deleted successfully!');
                 receiveUserList();
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Delete error:', error);
-                ElMessage.error('Failed to delete user');
+                ElMessage.error(error.response?.data?.detail || 'Failed to delete user');
             }
         })
         .catch(() => {
         });
 };
 
-const update = (row: AccountInfo) => {
-    isEditMode.value = true;
-    currentEditUserId.value = row.id!;
-    showDrawer.value = true;
 
-    // 预填表单
-    userForm.username = row.username;
-    userForm.email = row.email;
-    userForm.password = row.password;
-};
-
-//For User add and data collection 
-let userForm = reactive<AccountInfo>({
-    createTime: '',
-    updateTime: '',
-    email: '',
-    username: '',
-    password: '',
-});
-
-const resetForm = () => {
-    userForm.username = '';
-    userForm.email = '';
-    userForm.password = '';
-    isEditMode.value = false;
-    currentEditUserId.value = null;
-};
 
 // submit user form
 const submitUser = async () => {
@@ -353,37 +378,55 @@ const submitUser = async () => {
 
         try {
             if (isEditMode.value && currentEditUserId.value !== null) {
-                const res = await updateUserApi(currentEditUserId.value, userForm);
+                // update existing user
+                const res = await updateUser(currentEditUserId.value, userForm);
                 if (res.status === 200) {
                     showSuccessAndReload('User updated successfully!');
                 } else {
                     ElMessageBox.alert('Failed to update user', 'Error');
                 }
             } else {
-                const res = await addUserApi(userForm);
-                if (res.status === 200) {
-                    showSuccessAndReload('User added successfully!');
+                // add new user
+                // console.log("Registering new user:", userForm);
+                const registerRes = await registerApi({
+                    email: userForm.email,
+                    password: userForm.password || '',
+                    username: userForm.username,
+                    avatar: userForm.avatar || '',
+                });
+
+                if (registerRes.status === 201 || registerRes.status === 200) {
+                    const newUserId = registerRes.data.id;
+                    if (!newUserId) {
+                        throw new Error('User registration did not return a valid user ID.');
+                    }
                 } else {
-                    ElMessageBox.alert('Failed to add user', 'Error');
+                    ElMessageBox.alert('User registration failed', 'Error');
                 }
             }
 
             showDrawer.value = false;
             receiveUserList();
             resetForm();
-        } catch (error) {
+        } catch (error: any) {
             console.error("Submit error:", error);
-            ElMessageBox.alert('Unexpected error occurred', 'Error');
+            ElMessageBox.alert(error.response?.data?.detail || 'Unexpected error occurred', 'Error');
         }
     });
 };
 
 
+////////////////// SEARCHING MODULE
+// searching module
+const handleSearch = () => {
+    receiveUserList(1);
+};
 
-onMounted(() => {
-    receiveUserList();
-    fetchRoles();
-});
+// reset search
+const handleReset = () => {
+    searchinfo.value = '';
+    receiveUserList(1);
+};
 
 </script>
 
@@ -441,11 +484,11 @@ onMounted(() => {
 
 
 // drawer styles
-.drawer-role-container {
+.drawer-pass-container {
     padding: 24px;
 }
 
-.drawer-role-header {
+.drawer-pass-header {
     margin-bottom: 20px;
 
     h3 {
@@ -455,7 +498,7 @@ onMounted(() => {
     }
 }
 
-.drawer-role-form {
+.drawer-pass-form {
     .el-form-item {
         margin-bottom: 20px;
     }
@@ -465,10 +508,5 @@ onMounted(() => {
         font-size: 14px;
         padding-left: 4px;
     }
-}
-
-.drawer-role-footer {
-    text-align: right;
-    margin-top: 30px;
 }
 </style>

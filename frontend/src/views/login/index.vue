@@ -10,7 +10,7 @@
       <!-- 前端 check rule 设定在下面 -->
       <el-form ref="ruleFormRef" class="login-form" :model="loginData" :rules="checkRules">
         <el-form-item prop="username">
-          <el-input v-model="loginData.username" placeholder="Username" :prefix-icon="User" />
+          <el-input v-model="loginData.username" placeholder="Email" :prefix-icon="Message" />
         </el-form-item>
 
         <el-form-item prop="password">
@@ -31,7 +31,7 @@
 
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
-import { User, Lock } from '@element-plus/icons-vue'
+import { Message, Lock } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import { ElNotification } from 'element-plus'
 // userstore manage user status
@@ -52,19 +52,19 @@ let $router = useRouter()
 //登陆逻辑等
 //登陆状态用pinia管理
 const loginData = reactive({
-  username: 'admin',
+  username: 'admin@example.com',
   password: '123456'
 })
 
 // form validation rules
 const checkRules = {
   username: [
-    { required: true, message: 'Please enter your username', trigger: 'blur' },
-    { min: 3, max: 20, message: 'Username must be between 3 and 20 characters', trigger: 'blur' }
+    { required: true, message: 'Please enter your email', trigger: 'blur' },
+    { min: 1, max: 40, message: 'Email must be between 1 and 40 characters', trigger: 'blur' }
   ],
   password: [
     { required: true, message: 'Please enter your password', trigger: 'blur' },
-    { min: 6, max: 20, message: 'Password must be between 6 and 20 characters', trigger: 'blur' }
+    { min: 1, max: 20, message: 'Password must be between 1 and 20 characters', trigger: 'blur' }
   ]
 }
 

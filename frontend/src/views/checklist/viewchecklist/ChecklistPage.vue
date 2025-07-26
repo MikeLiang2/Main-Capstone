@@ -2,36 +2,35 @@
   <div style="max-width: 800px; margin: auto;">
     <el-card :header="process.name">
       <p>分类：{{ process.category.name }}</p>
-        <div v-for="stage in process.stages" :key="stage.id" class="stage">
-          <el-divider>{{ stage.name }}</el-divider>
-          
-          <div v-for="step in stage.steps" :key="step.id" style="margin-bottom: 0.5rem;">
-            <el-checkbox
-              v-model="step.completed"
-              @change="onCheckChange(step)"
-            >
-              {{ step.name }}
-              <a v-if="step.resourceUrl" :href="step.resourceUrl" target="_blank" style="margin-left: 10px;">
-                [参考资料]
-              </a>
-              
-            </el-checkbox>
-          </div>
-          
+      <div v-for="stage in process.stages" :key="stage.id" class="stage">
+        <el-divider>{{ stage.name }}</el-divider>
+
+        <div v-for="step in stage.steps" :key="step.id" style="margin-bottom: 0.5rem;">
+          <el-checkbox v-model="step.completed" @change="onCheckChange(step)">
+            {{ step.name }}
+            <a v-if="step.resourceUrl" :href="step.resourceUrl" target="_blank" style="margin-left: 10px;">
+              [参考资料1]
+            </a>
+
+          </el-checkbox>
         </div>
+
+      </div>
     </el-card>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { ref } from 'vue'
-import type { ChecklistStep, ProcessInstance} from '@/api/checklist/type'
+import type { ChecklistStep, ProcessInstance } from '@/api/checklist/type'
 
 const process = ref<ProcessInstance>({
   id: 1,
   name: '签证申请流程',
   description: '帮助用户逐步完成签证申请',
   category: { id: 1, name: '签证' },
+  owner: { id: '1', username: 'admin', email: 'admin@example.com', avatar: '' },
+  shared_users: [],
   stages: [
     {
       id: 1,

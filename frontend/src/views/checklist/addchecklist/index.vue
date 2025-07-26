@@ -1,49 +1,49 @@
 <template>
   <div style="max-width: 800px; margin: auto;">
     <el-card>
-      <h2>新增流程</h2>
-      <el-form label-position="top" :model="form">
-        <el-form-item label="流程名称">
+      <h2>{{ isEditMode ? 'Edit Checklist' : 'Create New Process' }}</h2>
+      <el-form :model="form" :rules="rules" ref="formRef" label-position="top">
+        <el-form-item label="Process Name" prop="name">
           <el-input v-model="form.name" />
         </el-form-item>
-        <el-form-item label="分类">
-          <el-select v-model="form.category.id" placeholder="请选择分类">
+        <el-form-item label="Category">
+          <el-select v-model="form.category.id" placeholder="Select a category">
             <el-option v-for="cat in categories" :key="cat.id" :label="cat.name" :value="cat.id" />
           </el-select>
         </el-form-item>
-        <el-form-item label="描述">
+        <el-form-item label="Description">
           <el-input v-model="form.description" type="textarea" />
         </el-form-item>
 
-        <el-divider>添加阶段</el-divider>
+        <el-divider>Add Stages</el-divider>
         <div v-for="(stage, index) in form.stages" :key="index" style="margin-bottom: 20px;">
-          <el-form-item :label="`阶段名称 ${index + 1}`">
+          <el-form-item :label="`Stage Name ${index + 1}`">
             <el-input v-model="stage.name" />
           </el-form-item>
-          <el-form-item :label="`阶段顺序 ${index + 1}`">
+          <el-form-item :label="`Stage Order ${index + 1}`">
             <el-input-number v-model="stage.order" :min="1" />
           </el-form-item>
-          <el-button type="primary" plain size="small" @click="() => addStep(index)">添加步骤</el-button>
+          <el-button type="primary" plain size="small" @click="() => addStep(index)">Add Step</el-button>
 
           <div v-for="(step, sIndex) in stage.steps" :key="sIndex" style="margin-left: 1em;">
-            <el-form-item :label="`步骤 ${sIndex + 1} 名称`">
+            <el-form-item :label="`Step ${sIndex + 1} Name`">
               <el-input v-model="step.name" />
             </el-form-item>
-            <el-form-item label="描述">
+            <el-form-item label="Description">
               <el-input v-model="step.description" />
             </el-form-item>
-            <el-form-item label="参考链接">
+            <el-form-item label="Resource URL">
               <el-input v-model="step.resourceUrl" />
             </el-form-item>
           </div>
         </div>
 
         <el-form-item>
-          <el-button @click="addStage">添加阶段</el-button>
+          <el-button @click="addStage">Add Stage</el-button>
         </el-form-item>
 
         <el-form-item>
-          <el-button type="primary" @click="submit">提交</el-button>
+          <el-button type="primary" @click="submit">Submit</el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -54,22 +54,26 @@
 import { ref } from 'vue'
 import { onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { getChecklistById, updateChecklist } from '@/api/checklist'
-
+import { getChecklistById, updateChecklist, createChecklist, getCategories } from '@/api/checklist'
+import { useRouter } from 'vue-router'
 const route = useRoute()
+const router = useRouter()
+const categories = ref<{ id: number, name: string }[]>([])
 
-const categories = ref([
-  { id: 1, name: '签证' },
-  { id: 2, name: '入职' }
-])
+const rules = {
+  name: [{ required: true, message: 'Checklist name is required', trigger: 'blur' }]
+}
 
-const timestampId = Date.now();
+const formRef = ref()
+
+
+// const timestampId = Date.now();
 
 const form = ref({
-  id: timestampId,
+  // id: undefined,
   name: '',
   description: '',
-  category: { id: 1, name: '签证' },
+  category: { id: 1, name: '' },
   stages: [] as any[]
 })
 
@@ -95,41 +99,51 @@ const addStep = (stageIndex: number) => {
   });
 };
 
-import { createChecklist } from '@/api/checklist/index'
-import type { ProcessInstance } from '@/api/checklist/type'
-import { id } from 'element-plus/es/locales.mjs'
-
-const isEditMode = !!route.params.id
+const isEditMode = ref(false)
 
 onMounted(async () => {
-  if (isEditMode) {
+  const res = await getCategories()
+  categories.value = res.data
+
+  if (route.params.id) {
+    isEditMode.value = true
     const data = await getChecklistById(Number(route.params.id))
-    form.value = data.data
+    form.value = {
+      name: data.data.name,
+      description: data.data.description,
+      category: data.data.category || { id: 1, name: '' },
+      stages: data.data.stages
+    }
   }
 })
 
 const submit = async () => {
+  if (!formRef.value) return;
 
-  const payload: ProcessInstance = {
-    id: form.value.id,
-    name: form.value.name,
-    description: form.value.description,
-    category: form.value.category,
-    stages: form.value.stages
-  };
+  formRef.value.validate(async (valid: boolean) => {
+    if (!valid) return;
 
-  try {
-    if (isEditMode) {
-      await updateChecklist(payload.id, payload)
-      alert("更新成功")
-    } else {
-      console.log('提交数据:', payload);
-      const result = await createChecklist(payload);
-      alert('创建成功：' + JSON.stringify(result));
+    const payload = {
+      name: form.value.name,
+      description: form.value.description,
+      category_id: form.value.category.id,
+      stages: form.value.stages
+    };
+
+    try {
+      if (isEditMode.value) {
+        await updateChecklist(Number(route.params.id), payload);
+        alert("Successfully updated");
+        router.push(`/checklist/editchecklist`);
+      } else {
+        const result = await createChecklist(payload);
+        alert('Created successfully');
+        router.push(`/checklist/editchecklist`);
+      }
+    } catch (error: any) {
+      alert('Submission failed: ' + error.message);
     }
-
-  } catch (error: any) {
-    alert('提交失败：' + error.message);
-  }
+  });
 };
+
 </script>

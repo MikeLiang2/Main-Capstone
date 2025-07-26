@@ -1,7 +1,5 @@
 //axios
 import axios from 'axios';
-// user store for token check
-import { GET_TOKEN } from './token';
 import useUserStore from '@/store/modules/user';
 
 //access address

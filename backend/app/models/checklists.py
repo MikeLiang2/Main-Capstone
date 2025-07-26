@@ -1,29 +1,136 @@
-from pydantic import BaseModel
-from typing import List
-###############################
-# Define checklist and process models, st3
+from pydantic import BaseModel, EmailStr
+from typing import List, Optional
 
-class ChecklistStep(BaseModel):
+from uuid import UUID
+
+class UserBrief(BaseModel):
+    id: UUID
+    username: str
+    email: EmailStr
+    avatar: Optional[str] = None
+
+    model_config = {
+        "from_attributes": True
+    }
+
+class ProcessShareRead(BaseModel):
+    user: UserBrief
+    can_edit: bool
+    can_share: bool
+
+    model_config = {
+        "from_attributes": True
+    }
+
+class ChecklistStepBase(BaseModel):
     id: int
     name: str
     description: str
     completed: bool
     resourceUrl: str
+    model_config = {
+        "from_attributes": True
+    }
 
-class ChecklistStage(BaseModel):
+class ChecklistStageBase(BaseModel):
     id: int
     name: str
     order: int
-    steps: list[ChecklistStep]
+    steps: List[ChecklistStepBase]
+    model_config = {
+        "from_attributes": True
+    }
 
-class ProcessCategory(BaseModel):
+class ProcessCategoryBase(BaseModel):
     id: int
     name: str
+    model_config = {
+        "from_attributes": True
+    }
 
-class ProcessInstance(BaseModel):
+class ProcessInstanceBase(BaseModel):
     id: int
     name: str
     description: str
-    category: ProcessCategory
-    stages: List[ChecklistStage]
+    category: ProcessCategoryBase
+    stages: List[ChecklistStageBase]
+    owner: UserBrief
+    shared_users: List[ProcessShareRead]
+    model_config = {
+        "from_attributes": True
+    }
 
+###############
+
+class ChecklistStepCreate(BaseModel):
+    name: str
+    description: str
+    completed: bool = False
+    resourceUrl: str
+
+class ChecklistStageCreate(BaseModel):
+    name: str
+    order: int
+    steps: List[ChecklistStepCreate]
+
+class ProcessInstanceCreate(BaseModel):
+    name: str
+    description: str
+    category_id: int
+    stages: List[ChecklistStageCreate]
+
+
+class ProcessCategoryCreate(BaseModel):
+    name: str
+
+#####################
+class ChecklistListResponse(BaseModel):
+    records: List[ProcessInstanceBase]
+    total: int
+
+    model_config = {
+        "from_attributes": True
+    }
+
+
+class ChecklistStepRead(BaseModel):
+    id: int
+    name: str
+    completed: bool
+
+    model_config = {
+        "from_attributes": True
+    }
+class ChecklistStageRead(BaseModel):
+    id: int
+    name: str
+    steps: List[ChecklistStepRead]
+
+    model_config = {
+        "from_attributes": True
+    }
+
+class CategoryRead(BaseModel):
+    id: int
+    name: str
+
+    model_config = {
+        "from_attributes": True
+    }
+
+class ChecklistRead(BaseModel):
+    id: int
+    name: str
+    category: CategoryRead
+    stages: List[ChecklistStageRead]
+
+    model_config = {
+        "from_attributes": True
+    }
+
+
+class ShareChecklistRequest(BaseModel):
+    email: EmailStr
+    can_edit: Optional[bool] = False
+    can_share: Optional[bool] = False
+    

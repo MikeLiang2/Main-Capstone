@@ -75,7 +75,7 @@ export const constantRoute: RouteRecordRaw[] = [
             {
                 path: '/checklist/editchecklist',
                 name: 'ChecklistManage',
-                component: () => import('@/views/checklist/editchecklist/index.vue'),
+                component: () => import('@/views/checklist/editchecklist/editchecklist.vue'),
                 meta: {
                     title: 'Edit Checklist',
                     hidden: false, // This route is not hidden in the menu
@@ -92,16 +92,16 @@ export const constantRoute: RouteRecordRaw[] = [
                     icon: 'DocumentAdd', // Icon for the add checklist page
                 }
             },
-            {
-                path: '/checklist/viewchecklist',
-                name: 'ViewChecklist',
-                component: () => import('@/views/checklist/viewchecklist/ChecklistPage.vue'),
-                meta: {
-                    title: 'View Checklist',
-                    hidden: false, // This route is not hidden in the menu
-                    icon: 'View', // Icon for the view checklist page
-                }
-            },
+            // {
+            //     path: '/checklist/viewchecklist',
+            //     name: 'ViewChecklist',
+            //     component: () => import('@/views/checklist/viewchecklist/ChecklistPage.vue'),
+            //     meta: {
+            //         title: 'View Checklist',
+            //         hidden: false, // This route is not hidden in the menu
+            //         icon: 'View', // Icon for the view checklist page
+            //     }
+            // },
             {
                 path: '/checklist/editchecklist/:id', // 动态参数 :id
                 name: 'EditChecklist',
@@ -136,7 +136,7 @@ export const constantRoute: RouteRecordRaw[] = [
             },
             {
                 path: '/people/role',
-                component: () => import('@/views/people/role/index.vue'),
+                component: () => import('@/views/people/role/role.vue'),
                 meta: {
                     title: 'Role',
                     hidden: false, // This route is not hidden in the menu

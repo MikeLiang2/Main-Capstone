@@ -10,7 +10,6 @@ import type { UserState } from '@/store/modules/types/type';
 // token OPERATIONS
 import { GET_TOKEN, SET_TOKEN, REMOVE_TOKEN } from '@/utils/token';
 import { constantRoute } from '@/router/routes';
-import { useRouter } from 'vue-router';
 
 let useUserStore = defineStore('User', {
     //store user status
@@ -43,14 +42,15 @@ let useUserStore = defineStore('User', {
     actions: {
         async userLogin(user: loginData) {
             let res = await Mylogin(user);
+
             // Check if the response is successful
             if (res.status == 200) {
                 // Set user info and token in the store
-                this.token = (res.data.token as string);
+                this.token = (res.data.access_token as string);
                 // store user info in local storage
                 //本地存储用户信息 token
                 //localStorage.setItem('token', (res.data.token as string));
-                SET_TOKEN(res.data.token as string);
+                SET_TOKEN(res.data.access_token as string);
                 // success
                 return 'ojbk';
 
