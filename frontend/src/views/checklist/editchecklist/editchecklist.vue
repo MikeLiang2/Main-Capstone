@@ -26,16 +26,18 @@
 
       <!-- Checklist Table -->
       <el-table :data="checklistList" style="width: 100%" :fit="true" @row-click="row => openChecklistDrawer(row.id)">
-        <el-table-column prop="id" label="ID" width="80" align="center" sortable/>
-        <el-table-column prop="name" label="Name" show-overflow-tooltip align="center" sortable/>
-        <el-table-column prop="category.name" label="Category" show-overflow-tooltip align="center" sortable/>
-        <el-table-column prop="owner.username" label="Owner" align="center" sortable/>
+        <el-table-column prop="id" label="ID" width="80" align="center" sortable />
+        <el-table-column prop="name" label="Name" show-overflow-tooltip align="center" sortable />
+        <el-table-column prop="category.name" label="Category" show-overflow-tooltip align="center" sortable />
+        <el-table-column prop="owner.username" label="Owner" align="center" sortable />
         <el-table-column label="Shared With" align="center">
           <template #default="{ row }">
-            {{row.shared_users.map((s: any) => s.user.username).join(', ')}}
+            <span class="share-link" @click.stop="openEditShareDialog(row)">
+              {{row.shared_users.map((s: any) => s.user.username).join(', ') || '-'}}
+            </span>
           </template>
         </el-table-column>
-        <el-table-column label="Actions" align="center" width="370">
+        <el-table-column label="Actions" align="center" width="350">
           <template #default="{ row }">
             <el-button type="primary" size="small" @click="editChecklist(row.id)">Edit</el-button>
             <el-button type="danger" size="small" @click.stop="deleteChecklist(row.id)">Delete</el-button>
@@ -60,7 +62,7 @@
           <p class="checklist-meta"><strong>Category:</strong> {{ selectedChecklist.category.name }}</p>
           <p class="checklist-meta"><strong>Owner:</strong> {{ selectedChecklist.owner.username }}</p>
           <p class="checklist-meta"><strong>Shared With:</strong>
-            {{ selectedChecklist.shared_users.map(s => s.user.username).join(', ') }}
+            {{selectedChecklist.shared_users.map(s => s.user.username).join(', ')}}
           </p>
           <p class="checklist-meta"><strong>Description:</strong> {{ selectedChecklist.description }}</p>
 
@@ -106,14 +108,35 @@
         </span>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="showEditShareDialog" title="Edit Shares" width="500px">
+      <el-table :data="editShares" style="width: 100%">
+        <el-table-column prop="user.username" label="User" />
+        <el-table-column label="Can Edit" width="100">
+          <template #default="{ row }">
+            <el-checkbox v-model="row.can_edit" @change="() => updateSharePermission(row)" />
+          </template>
+        </el-table-column>
+        <el-table-column label="Can Share" width="110">
+          <template #default="{ row }">
+            <el-checkbox v-model="row.can_share" @change="() => updateSharePermission(row)" />
+          </template>
+        </el-table-column>
+        <el-table-column width="80" label="Delete">
+          <template #default="{ row }">
+            <el-button type="danger" size="small" @click="deleteShareAction(row)">Delete</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { reactive, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { getAllChecklists, shareChecklist } from '@/api/checklist'
-import type { ProcessInstance } from '@/api/checklist/type'
+import { getAllChecklists, shareChecklist, deleteShare } from '@/api/checklist'
+import type { ProcessInstance, ChecklistShare } from '@/api/checklist/type'
 import { ElMessageBox, ElMessage, type FormRules } from 'element-plus'
 import { deleteChecklistApi } from '@/api/checklist'
 
@@ -245,11 +268,46 @@ const shareForm = ref({
   can_share: false
 })
 const selectedChecklistId = ref<number | null>(null)
+const showEditShareDialog = ref(false)
+const editShares = ref<ChecklistShare[]>([])
 
 const openShareDialog = (row: ProcessInstance) => {
   selectedChecklistId.value = row.id
   shareForm.value = { email: '', can_edit: false, can_share: false }
   showShareDialog.value = true
+}
+
+const openEditShareDialog = (row: ProcessInstance) => {
+  selectedChecklistId.value = row.id
+  editShares.value = row.shared_users.map(s => ({ ...s }))
+  showEditShareDialog.value = true
+}
+
+const updateSharePermission = async (share: ChecklistShare) => {
+  if (!selectedChecklistId.value) return
+  try {
+    await shareChecklist(selectedChecklistId.value, {
+      email: share.user.email,
+      can_edit: share.can_edit,
+      can_share: share.can_share
+    })
+    ElMessage.success('Share updated')
+    await loadChecklists(currentPage.value)
+  } catch (error) {
+    showError(error, 'Failed to update share')
+  }
+}
+
+const deleteShareAction = async (share: ChecklistShare) => {
+  if (!selectedChecklistId.value) return
+  try {
+    await deleteShare(selectedChecklistId.value, share.user.id)
+    ElMessage.success('Share deleted')
+    await loadChecklists(currentPage.value)
+    showEditShareDialog.value = false
+  } catch (error) {
+    showError(error, 'Failed to delete share')
+  }
 }
 
 const submitShare = async () => {
@@ -382,6 +440,11 @@ onMounted(loadChecklists)
   font-size: 13px;
   color: #888;
   line-height: 1.4;
+}
+
+.share-link {
+  cursor: pointer;
+  color: #409eff;
 }
 
 .search-form {

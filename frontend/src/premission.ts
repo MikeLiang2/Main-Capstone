@@ -60,7 +60,7 @@ router.beforeEach(async (to, from, next) => {
         }
     }
     else {
-        if (to.path === '/login') {
+        if (to.path === '/login' || to.path === '/register') {
             // if the user is not logged in, then allow to go to the login route
             next();
         }

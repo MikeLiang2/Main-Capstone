@@ -98,8 +98,8 @@ export interface AssignedRole {
         <!-- users -->
         <el-table :fit="true" style="width: 100%; margin: 15px 0;" :data="roleList">
             <el-table-column type="selection" width="30" />
-            <el-table-column align="center" prop="id" label="#" show-overflow-tooltip sortable/>
-            <el-table-column align="center" prop="name" label="Role Name" show-overflow-tooltip sortable/>
+            <el-table-column align="center" prop="id" label="#" show-overflow-tooltip sortable />
+            <el-table-column align="center" prop="name" label="Role Name" show-overflow-tooltip sortable />
             <el-table-column align="center" width="255" prop="Operations" label="Operations" sortable>
                 <template #="{ row }">
                     <div style="display: flex; flex-wrap: wrap; gap: 4px; justify-content: center;">
@@ -190,12 +190,24 @@ const deleteRole = async (row: Role) => {
         await deleteRoleApi(row.id);
         ElMessage.success('Role deleted');
         receiveRoleList(currentPage.value);
-    } catch (err) {
-        if (err !== 'cancel') {
-            console.error('Delete role failed', err);
-            ElMessage.error('Failed to delete role');
+    } catch (err: any) {
+        if (err === 'cancel') {
+            // 用户点击了 Cancel，不做任何提示
+            return;
         }
-        // else: user clicked "Cancel", no message needed
+
+        console.error('Submit role failed', err);
+
+        const detail = err?.response?.data?.detail;
+
+        if (typeof detail === 'string') {
+            ElMessage.error(detail);
+        } else if (Array.isArray(detail)) {
+            const messages = detail.map((d: any) => d.msg).join('; ');
+            ElMessage.error(messages);
+        } else {
+            ElMessage.error('Failed to submit role');
+        }
     }
 };
 
@@ -251,9 +263,20 @@ const submitAddRole = async () => {
         isEditMode.value = false;
         currentEditRoleId.value = null;
         receiveRoleList(1);
-    } catch (err) {
+    } catch (err: any) {
         console.error('Submit role failed', err);
-        ElMessage.error('Failed to submit role');
+        // 尝试从后端响应中提取详细错误信息
+        const detail = err?.response?.data?.detail;
+
+        if (typeof detail === 'string') {
+            ElMessage.error(detail);
+        } else if (Array.isArray(detail)) {
+            // FastAPI validation error 格式为 array
+            const messages = detail.map((d: any) => d.msg).join('; ');
+            ElMessage.error(messages);
+        } else {
+            ElMessage.error('Failed to submit role');
+        }
     }
 };
 
@@ -352,5 +375,4 @@ onMounted(() => {
         gap: 10px 20px;
     }
 }
-
 </style>

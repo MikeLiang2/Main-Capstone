@@ -1,40 +1,3 @@
-// // checklists API
-// import service from '@/utils/request'; // Adjust path as needed
-// import type { ProcessInstance } from './type';
-// import request from "@/utils/request";
-// // Base path (no need to duplicate host/port if baseURL is set in axios config)
-
-// const BASE_PATH = '/checklist';
-
-// export function createChecklist(process: ProcessInstance) {
-//   return service.post<ProcessInstance>(BASE_PATH, process);
-// }
-
-// export function getChecklist(processId: number) {
-//   return service.get<ProcessInstance>(`${BASE_PATH}/${processId}`);
-// }
-
-// export const getAllChecklists = (params: { page: number; limit: number; name?: string }) => {
-//   return request.get('/checklist', { params })
-// }
-
-// export function getChecklistById(id: number) {
-//   return service.get<ProcessInstance>(`${BASE_PATH}/${id}`);
-// }
-
-
-// export function updateChecklist(id: number, data: ProcessInstance) {
-//   return service.put<ProcessInstance>(`${BASE_PATH}/${id}`, data);
-// }
-
-
-// export function deleteChecklistApi(id: number) {
-//   return request({
-//     url: `/checklists/${id}`,
-//     method: 'delete'
-//   })
-// }
-
 import request from '@/utils/request';
 import type {
   ProcessInstance,
@@ -83,4 +46,8 @@ export const shareChecklist = (checklistId: number, data: {
 
 export const copyChecklist = (id: number) => {
   return request.post(`/checklist/${id}/copy`)
+}
+
+export const deleteShare = (checklistId: number, userId: string) => {
+  return request.delete(`/processes/${checklistId}/share/${userId}`)
 }

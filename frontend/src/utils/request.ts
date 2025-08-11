@@ -7,7 +7,7 @@ import useUserStore from '@/store/modules/user';
 let service = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL, // Base URL for the API
   //  baseURL: 'http://127.0.0.1:8000', // Base URL for the API, change as needed
-  timeout: 5000, // Request timeout in milliseconds
+  timeout: 15000, // Request timeout in milliseconds
 });
 
 

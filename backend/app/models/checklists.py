@@ -133,4 +133,7 @@ class ShareChecklistRequest(BaseModel):
     email: EmailStr
     can_edit: Optional[bool] = False
     can_share: Optional[bool] = False
-    
+
+
+class PromptRequest(BaseModel):
+    prompt: str

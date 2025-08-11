@@ -1,12 +1,11 @@
-from app.auth.user_manager import require_permission
-from sqlalchemy import select
-from app.utils.checklist_access import build_checklist_query, has_any_global_permission
-from fastapi import APIRouter, HTTPException, Query, Depends, status
-from typing import List, Optional
+from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
-from sqlalchemy import func
-
-
+from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, HTTPException, Query, Depends, status
+from fastapi.responses import JSONResponse
+from typing import List, Optional
+from app.utils.checklist_access import build_checklist_query, has_any_global_permission
+from app.auth.user_manager import require_permission
 from app.models.db import (
     ProcessInstanceShare,
     User,
@@ -14,21 +13,22 @@ from app.models.db import (
     ProcessInstance,
     ChecklistStage,
     ChecklistStep,
+    ProcessInstanceShare,
+    ProcessCategory,
 )
-
-# from app.auth.user_manager import current_active_user
 from app.models.checklists import (
     ChecklistListResponse,
+    ChecklistStageCreate,
     ProcessInstanceBase,
     ProcessInstanceCreate,
     ProcessInstanceBase,
+    PromptRequest,
     ShareChecklistRequest,
+    ProcessCategoryCreate,
+    ProcessCategoryBase,
 )
-from app.models.checklists import ProcessCategoryCreate, ProcessCategoryBase
-from app.models.db import ProcessCategory
-
-# from app.utils.clmock import fake_stages, fake_checklist_data
-from sqlalchemy.ext.asyncio import AsyncSession
+from uuid import UUID
+from app.utils.vertex_ai import generate_checklist
 
 router = APIRouter()
 # PEOPLE_PERMISSIONS = [
@@ -189,10 +189,6 @@ async def create_process(
     return full_process
 
 
-from sqlalchemy import select
-from app.models.db import ProcessInstanceShare
-
-
 @router.put("/checklist/{process_id}", response_model=ProcessInstanceBase)
 async def update_process(
     process_id: int,
@@ -203,8 +199,6 @@ async def update_process(
             [
                 "editChecklist",
                 "editAnyChecklist",
-                "shareAnyChecklist",
-                "deleteAnyChecklist",
             ],
             require_all=False,
         )
@@ -331,6 +325,7 @@ async def get_categories(db: AsyncSession = Depends(get_async_session)):
 #     await db.commit()
 #     return
 
+
 @router.delete("/checklist/{checklist_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_checklist(
     checklist_id: int,
@@ -379,12 +374,21 @@ async def delete_checklist(
     await db.commit()
     return
 
+
 @router.post("/processes/{process_id}/share")
 async def share_checklist(
     process_id: int,
     payload: ShareChecklistRequest,
     db: AsyncSession = Depends(get_async_session),
-    user: User = Depends(require_permission("shareChecklist")),
+    user: User = Depends(
+        require_permission(
+            [
+                "shareAnyChecklist",
+                "shareChecklist",
+            ],
+            require_all=False,
+        )
+    ),
 ):
     # search process
     result = await db.execute(
@@ -492,6 +496,58 @@ async def share_checklist(
     return {"message": "Process shared successfully"}
 
 
+@router.delete(
+    "/processes/{process_id}/share/{target_user_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def delete_share(
+    process_id: int,
+    target_user_id: UUID,
+    db: AsyncSession = Depends(get_async_session),
+    user: User = Depends(
+        require_permission(
+            [
+                "shareAnyChecklist",
+                "editAnyChecklist",
+                "deleteAnyChecklist",
+            ],
+            require_all=False,
+        )
+    ),
+):
+    result = await db.execute(
+        select(ProcessInstance).where(ProcessInstance.id == process_id)
+    )
+    process = result.scalar_one_or_none()
+
+    if not process:
+        raise HTTPException(status_code=404, detail="Process not found")
+
+    if process.owner_id != user.id and not (
+        user.role.shareAnyChecklist
+        or user.role.editAnyChecklist
+        or user.role.deleteAnyChecklist
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="You do not have permission to delete this share",
+        )
+
+    share_result = await db.execute(
+        select(ProcessInstanceShare).where(
+            ProcessInstanceShare.process_id == process_id,
+            ProcessInstanceShare.user_id == target_user_id,
+        )
+    )
+    share = share_result.scalar_one_or_none()
+    if not share:
+        raise HTTPException(status_code=404, detail="Share not found")
+
+    await db.delete(share)
+    await db.commit()
+    return
+
+
 # Copy checklist
 @router.post("/checklist/{process_id}/copy", response_model=ProcessInstanceBase)
 async def copy_checklist(
@@ -558,3 +614,19 @@ async def copy_checklist(
         )
     )
     return result.scalar_one()
+
+
+
+
+@router.post("/checklist/generate", response_model=ProcessInstanceCreate)
+async def generate_checklist_from_ai(payload: PromptRequest):
+    try:
+        process = generate_checklist(payload.prompt)
+        return process
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=500,
+            content={"error": "AI response parse failed", "detail": str(e)},
+        )

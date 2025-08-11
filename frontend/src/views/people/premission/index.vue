@@ -24,16 +24,16 @@
         <!-- users -->
         <el-table :fit="true" style="width: 100%; margin: 15px 0;" :data="userList">
             <el-table-column type="selection" width="30" />
-            <el-table-column align="center" prop="id" label="#" show-overflow-tooltip sortable/>
-            <el-table-column align="center" prop="username" label="Name" show-overflow-tooltip sortable/>
-            <el-table-column align="center" prop="email" label="Email" show-overflow-tooltip sortable/>
+            <el-table-column align="center" prop="id" label="#" show-overflow-tooltip sortable />
+            <el-table-column align="center" prop="username" label="Name" show-overflow-tooltip sortable />
+            <el-table-column align="center" prop="email" label="Email" show-overflow-tooltip sortable />
             <el-table-column align="center" label="Role" show-overflow-tooltip sortable>
                 <template #="{ row }">
                     {{ roleMap[row.roleId] || 'Unknown' }}
                 </template>
             </el-table-column>
-            <el-table-column align="center" prop="createTime" label="Create Date" show-overflow-tooltip sortable/>
-            <el-table-column align="center" prop="updateTime" label="Update Date" show-overflow-tooltip sortable/>
+            <el-table-column align="center" prop="createTime" label="Create Date" show-overflow-tooltip sortable />
+            <el-table-column align="center" prop="updateTime" label="Update Date" show-overflow-tooltip sortable />
             <el-table-column align="center" width="300" prop="Operations" label="Operations">
                 <template #="{ row }">
                     <div style="display: flex; flex-wrap: wrap; gap: 4px; justify-content: center;">
@@ -71,7 +71,7 @@
                 <el-form-item v-if="!isEditMode" label="Password" prop="password" :rules="formRules.password">
                     <el-input type="password" placeholder="Enter password" v-model="userForm.password" />
                 </el-form-item>
-                <el-form-item v-if="isEditMode" label="Role" :rules="formRules.role">
+                <el-form-item v-if="isEditMode" label="Role" prop="roleId" :rules="formRules.role">
                     <el-select v-model="userForm.roleId" placeholder="Select role">
                         <el-option v-for="role in roleList" :key="role.id" :label="role.name" :value="role.id" />
                     </el-select>
@@ -216,7 +216,8 @@ const formRules = {
         }
     ],
     password: [
-        { required: true, message: 'Password is required', trigger: 'blur' }
+        { required: true, message: 'Password is required', trigger: 'blur' },
+        { min: 6, message: 'Password must be at least 6 characters', trigger: 'blur' }
     ],
     role: [
         { required: true, message: 'Role is required', trigger: 'blur' }
@@ -282,7 +283,7 @@ async function submitPass() {
         }
         try {
             // Your API call here
-            const res = await updateUserPassword(currentEditUserId.value, userForm.password);
+            const res = await updateUserPassword(currentEditUserId.value!, userForm.password ?? '');
             if (res.status === 200) {
                 // handle success
             } else {

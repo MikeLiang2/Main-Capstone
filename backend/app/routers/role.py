@@ -34,6 +34,7 @@ async def get_role_list_with_search(
     page: int = Query(1, gt=0),
     limit: int = Query(10, gt=0),
     name: Optional[str] = Query(None),
+    user=Depends(require_permission(["editRole", "addRole"], require_all=False)),
     db: AsyncSession = Depends(get_async_session),
 ):
     skip = (page - 1) * limit
@@ -60,7 +61,13 @@ async def get_role_list_with_search(
 
 # // Get all roles
 @router.get("/roles", response_model=list[RoleSchema])
-async def get_all_roles(db: AsyncSession = Depends(get_async_session)):
+async def get_all_roles(
+    db: AsyncSession = Depends(get_async_session),
+    user=Depends(
+        require_permission(["editRole", "addRole"], require_all=False)
+    ),  # Adjust permissions as needed,
+):
+
     result = await db.execute(select(RoleModel))
     roles = result.scalars().all()
     return [RoleSchema.model_validate(role, from_attributes=True) for role in roles]
@@ -112,7 +119,7 @@ async def update_role(
 async def delete_role(
     role_id: int,
     db: AsyncSession = Depends(get_async_session),
-    user: User = Depends(require_permission("editRole"))
+    user: User = Depends(require_permission("editRole")),
 ):
     result = await db.execute(select(RoleModel).where(RoleModel.id == role_id))
     role = result.scalar_one_or_none()

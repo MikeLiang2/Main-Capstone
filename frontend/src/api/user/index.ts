@@ -26,7 +26,7 @@ export const Mylogin = (user: loginData) => {
 
 // get user info
 export const getUserInfo = () => {
-  console.log('getUserInfo called', GET_TOKEN());
+  // console.log('getUserInfo called', GET_TOKEN());
   return request<user>({
     url: '/users/me',
     method: 'get',

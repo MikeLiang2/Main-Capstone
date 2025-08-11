@@ -92,16 +92,16 @@ export const constantRoute: RouteRecordRaw[] = [
                     icon: 'DocumentAdd', // Icon for the add checklist page
                 }
             },
-            // {
-            //     path: '/checklist/viewchecklist',
-            //     name: 'ViewChecklist',
-            //     component: () => import('@/views/checklist/viewchecklist/ChecklistPage.vue'),
-            //     meta: {
-            //         title: 'View Checklist',
-            //         hidden: false, // This route is not hidden in the menu
-            //         icon: 'View', // Icon for the view checklist page
-            //     }
-            // },
+            {
+                 path: '/checklist/ai-generate',
+                 name: 'AIGenerateChecklist',
+                 component: () => import('@/views/checklist/ai-generate/index.vue'),
+                 meta: {
+                     title: 'AI Checklist',
+                     hidden: false,
+                     icon: 'Cpu',
+                 }
+             },
             {
                 path: '/checklist/editchecklist/:id', // 动态参数 :id
                 name: 'EditChecklist',
@@ -147,6 +147,15 @@ export const constantRoute: RouteRecordRaw[] = [
         ]
 
     },
+    {
+        path: '/register',
+        name: 'register',
+        component: () => import('@/views/register/register.vue'),
+        meta: {
+            title: 'Register',
+            hidden: true
+        }
+    }
     // {
     //     path: '/checklist/view/:id',
     //     name: 'ViewChecklist',

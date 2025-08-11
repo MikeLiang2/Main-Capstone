@@ -24,6 +24,12 @@
           </el-button>
         </el-form-item>
       </el-form>
+
+      <div class="register-link">
+        <el-link type="primary" @click="goRegister">
+          Don't have an account? Sign up
+        </el-link>
+      </div>
     </div>
   </div>
 </template>
@@ -103,6 +109,10 @@ async function login() {
   }
   //const res = userStore.userLogin(loginData);
   //console.log(res)
+}
+
+const goRegister = () => {
+  $router.push('/register')
 }
 </script>
 

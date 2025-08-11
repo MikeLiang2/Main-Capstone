@@ -1,10 +1,11 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import checklist, premission, role, users
+from fastapi_users.db import SQLAlchemyUserDatabase
+from app.routers import checklist, role, users
 from app.models.user import UserCreate, UserRead, UserUpdate
-from app.auth.user_manager import auth_backend, current_active_user, fastapi_users
-from app.models.db import async_session_maker
-from app.seed.seed import seed_roles, seed_categories
+from app.auth.user_manager import auth_backend, fastapi_users, get_user_manager
+from app.models.db import async_session_maker, User
+from app.seed.seed import wait_for_db, wait_for_migrations_to_complete, seed_roles, seed_categories, seed_users
 
 app = FastAPI()
 
@@ -46,12 +47,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.get("/")
 def read_root():
     return {"message": "Welcome to Checklist System"}
 
+
 @app.on_event("startup")
 async def startup_event():
+    await wait_for_db()
+
     async with async_session_maker() as session:
+        await wait_for_migrations_to_complete(session)
         await seed_roles(session)
         await seed_categories(session)
+        await seed_users(session, await anext(get_user_manager(SQLAlchemyUserDatabase(session, User))))
