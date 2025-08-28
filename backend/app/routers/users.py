@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from app.models.db import get_async_session, User
 from app.models.user import AccountInfo, UserRead, UserData, UserUpdate, UserPasswordUpdate
+from app.utils.avatar_service import approve_avatar
 from app.auth.user_manager import require_permission, fastapi_users, UserManager, get_user_manager
 from fastapi import Query
 import re
@@ -78,13 +79,13 @@ async def update_user(
     if user_data.username is not None:
         target_user.username = user_data.username
 
-    if user_data.avatar is not None:
-        target_user.avatar = user_data.avatar
-
     if user_data.roleId is not None:
         target_user.roleId = user_data.roleId
 
     try:
+        if user_data.avatar is not None:
+            target_user.avatar = approve_avatar(
+                user_data.avatar, target_user.id, target_user.avatar)
         await db.commit()
         await db.refresh(target_user)
         return target_user
@@ -105,13 +106,15 @@ async def update_user(
             raise HTTPException(status_code=409, detail=detail_msg)
 
         elif "foreign key constraint" in err_msg:
-            raise HTTPException(status_code=400, detail="Invalid foreign key reference")
+            raise HTTPException(
+                status_code=400, detail="Invalid foreign key reference")
 
         elif "value too long" in err_msg or "invalid input" in err_msg:
             raise HTTPException(status_code=422, detail="Invalid field value")
 
         else:
-            raise HTTPException(status_code=500, detail="Unknown database error")
+            raise HTTPException(
+                status_code=500, detail="Unknown database error")
 
 
 # remove user
@@ -140,7 +143,7 @@ async def delete_user(
 @router.patch("/users/{user_id}/password", status_code=status.HTTP_200_OK)
 async def admin_change_user_password(
     user_id: UUID,
-    password_data: UserPasswordUpdate, 
+    password_data: UserPasswordUpdate,
     perm=Depends(require_permission(["editPassword"])),
     session: AsyncSession = Depends(get_async_session),
     manager: UserManager = Depends(get_user_manager)

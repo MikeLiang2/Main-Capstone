@@ -71,10 +71,18 @@ mock_users = [
     {
         "id": uuid4(),
         "username": "qp",
-        "avatar": "https://avatars.githubusercontent.com/u/91029359?v=4",
+        "avatar": "",
         "roleId": 2,
         "email": "qp@example.com",
         "password": "pass",
+    },
+    {
+        "id": uuid4(),
+        "username": "admin",
+        "avatar": "",
+        "roleId": 2,
+        "email": "admin@example.com",
+        "password": "123456",
     }
 ]
 

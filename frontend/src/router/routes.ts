@@ -93,15 +93,15 @@ export const constantRoute: RouteRecordRaw[] = [
                 }
             },
             {
-                 path: '/checklist/ai-generate',
-                 name: 'AIGenerateChecklist',
-                 component: () => import('@/views/checklist/ai-generate/index.vue'),
-                 meta: {
-                     title: 'AI Checklist',
-                     hidden: false,
-                     icon: 'Cpu',
-                 }
-             },
+                path: '/checklist/ai-generate',
+                name: 'AIGenerateChecklist',
+                component: () => import('@/views/checklist/ai-generate/index.vue'),
+                meta: {
+                    title: 'AI Checklist',
+                    hidden: false,
+                    icon: 'Cpu',
+                }
+            },
             {
                 path: '/checklist/editchecklist/:id', // 动态参数 :id
                 name: 'EditChecklist',
@@ -147,6 +147,31 @@ export const constantRoute: RouteRecordRaw[] = [
         ]
 
     },
+
+    {
+        path: '/',
+        name: 'settings',
+        component: () => import('@/layout/index.vue'),
+        meta: {
+            title: 'Settings',
+            hidden: false, 
+            icon: 'Setting', 
+        },
+        redirect: '/settings',
+        children: [
+            {
+                path: '/settings',
+                name: 'all settings',
+                component: () => import('@/views/settings/index.vue'),
+                meta: {
+                    title: 'Settings',
+                    hidden: false, 
+                    icon: 'Setting',
+                }
+            }
+        ]
+    },
+
     {
         path: '/register',
         name: 'register',

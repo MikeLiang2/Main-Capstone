@@ -26,7 +26,7 @@
 
       <!-- Checklist Table -->
       <el-table :data="checklistList" style="width: 100%" :fit="true" @row-click="row => openChecklistDrawer(row.id)">
-        <el-table-column prop="id" label="ID" width="80" align="center" sortable />
+        <el-table-column prop="id" label="ID" width="70" align="center" sortable />
         <el-table-column prop="name" label="Name" show-overflow-tooltip align="center" sortable />
         <el-table-column prop="category.name" label="Category" show-overflow-tooltip align="center" sortable />
         <el-table-column prop="owner.username" label="Owner" align="center" sortable />
@@ -35,6 +35,15 @@
             <span class="share-link" @click.stop="openEditShareDialog(row)">
               {{row.shared_users.map((s: any) => s.user.username).join(', ') || '-'}}
             </span>
+          </template>
+        </el-table-column>
+
+        <el-table-column label="Progress" width="100" align="center">
+          <template #default="{ row }">
+            <el-tooltip :content="`${rowProgress(row)}%`">
+              <el-progress :percentage="rowProgress(row)" :show-text="false" :stroke-width="12"
+                :color="progressColor" />
+            </el-tooltip>
           </template>
         </el-table-column>
         <el-table-column label="Actions" align="center" width="350">
@@ -151,6 +160,12 @@ let currentPage = ref<number>(1);
 let pageSize = ref<number>(10);
 let total = ref<number>(100);
 
+const refreshRow = async (id: number) => {
+  const res = await getChecklistById(id)
+  const idx = checklistList.value.findIndex(c => c.id === id)
+  if (idx !== -1) checklistList.value[idx] = res.data
+}
+
 const showDrawer = ref(false)
 const selectedChecklist = ref<ProcessInstance | null>(null)
 
@@ -188,11 +203,14 @@ const toggleStep = async (step: ChecklistStep) => {
     const payload = formatChecklistForUpdate(selectedChecklist.value)
     await updateChecklist(selectedChecklist.value.id, payload)
     ElMessage.success('Step updated')
+
+    await refreshRow(selectedChecklist.value.id)
   } catch (error) {
     console.error('Update failed:', error)
     showError(error, 'Update failed')
   }
 }
+
 ////
 
 
@@ -364,6 +382,22 @@ const handleCurrentChange = (val: number) => {
   currentPage.value = val;
   loadChecklists(currentPage.value);
 };
+
+
+const calcProgress = (checklist: ProcessInstance): number => {
+  const steps = checklist.stages?.flatMap(s => s.steps) || []
+  const total = steps.length
+  if (!total) return 0
+  const done = steps.filter(s => s.completed).length
+  return Math.round((done / total) * 100)
+}
+
+const rowProgress = (row: ProcessInstance) => calcProgress(row)
+
+const progressColor = (p: number) => {
+  const hue = Math.round((p / 100) * 120)
+  return `hsl(${hue} 70% 45%)`
+}
 
 
 onMounted(loadChecklists)

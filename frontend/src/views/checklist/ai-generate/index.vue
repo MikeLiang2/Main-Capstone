@@ -2,8 +2,8 @@
   <el-card>
     <el-form :model="form" label-position="top">
       <el-form-item label="Prompt">
-        <el-input type="textarea" v-model="form.prompt" :rows="5"
-          placeholder="Describe the checklist you want to create today..." />
+        <el-input type="textarea" v-model="form.prompt" placeholder="Describe the checklist you want to create today..."
+          :autosize="{ minRows: 3, maxRows: 40 }" />
       </el-form-item>
       <el-form-item class="form-buttons">
         <el-button type="primary" :loading="loading" :disabled="loading" @click="generateChecklist">

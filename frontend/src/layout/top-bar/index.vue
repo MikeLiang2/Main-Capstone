@@ -5,7 +5,7 @@
 
         <div class="top-bar-content">
             <el-button type="primary" size="large" icon="RefreshLeft" @click="Refresh"></el-button>
-            <el-button type="primary" size="large" icon="Setting"></el-button>
+            <el-button type="primary" size="large" icon="Setting" @click="goSettings"></el-button>
             <img :src="userStore.userimage" style="width: 40px; height: 40px; border-radius: 50%;">
 
             <el-dropdown>
@@ -45,6 +45,10 @@ function Refresh() {
     settingStore.refresh = !settingStore.refresh; // Toggle the refresh state
 }
 
+// 跳到头像生成页面
+function goSettings() {
+    $router.push({ path: '/settings' });
+}
 
 // logout
 const logout = () => {

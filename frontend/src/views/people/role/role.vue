@@ -168,6 +168,7 @@ const selectedPermissions = ref<string[]>([]);
 
 // Drawer
 const addRole = () => {
+    currentEditRoleId.value = null;
     addForm.name = '';
     addForm.description = '';
     selectedPermissions.value = [];

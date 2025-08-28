@@ -5,7 +5,7 @@
             <Logo> </Logo>
 
             <!-- left scrollbar -->
-            <el-scrollbar class="menu-list">
+            <el-scrollbar class="menulist">
                 <!-- menu items -->
                 <!-- dynamic menu generation, 默认获取激活的路由,展开菜单 -->
                 <el-menu :default-active="$route.path" active-text-color="#f0b4e3" background-color="#3e6da3"

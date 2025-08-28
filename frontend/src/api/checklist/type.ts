@@ -53,7 +53,7 @@ export interface ProcessInstance {
 export interface ProcessInstanceCreate {
   name: string;
   description: string;
-  category_id: number;
+  category_id?: number;
   stages: ChecklistStageCreate[];
 }
 
